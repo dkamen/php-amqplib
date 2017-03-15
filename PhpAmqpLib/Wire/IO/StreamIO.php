@@ -303,6 +303,44 @@ class StreamIO extends AbstractIO
         $this->last_write = microtime(true);
     }
 
+    public function write_cleartext($data)
+    {
+        $written = 0;
+        $len = mb_strlen($data, 'ASCII');
+
+        
+
+        if (!is_resource($this->sock)) {
+            throw new AMQPRuntimeException('Broken pipe or closed connection');
+        }
+
+        set_error_handler(array($this, 'error_handler'));
+        try {
+            $buffer = fwrite($this->sock, $data);
+        } catch (\ErrorException $e) {
+            restore_error_handler();
+            throw $e;
+        }
+        restore_error_handler();
+
+        if ($buffer === false) {
+            throw new AMQPRuntimeException('Error sending data');
+        }
+
+        if ($buffer === 0 && feof($this->sock)) {
+                throw new AMQPRuntimeException('Broken pipe or closed connection');
+        }
+
+        if ($this->timed_out()) {
+            throw new AMQPTimeoutException('Error sending data. Socket connection timed out');
+        }
+
+        $written += $buffer;
+    
+
+        $this->last_write = microtime(true);  
+    }
+    
     /**
      * Internal error handler to deal with stream and socket errors that need to be ignored
      *
