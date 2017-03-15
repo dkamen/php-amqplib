@@ -62,4 +62,15 @@ class AMQPStreamConnection extends AbstractConnection
         // save the params for the use of __clone, this will overwrite the parent
         $this->construct_params = func_get_args();
     }
+    
+    public function write($data)
+    {
+        $this->debug->debug_hexdump($data);
+        try {
+            $this->getIO()->write_cleartext($data);
+        } catch (AMQPRuntimeException $e) {
+            $this->setIsConnected(false);
+            throw $e;
+        }
+    }
 }
